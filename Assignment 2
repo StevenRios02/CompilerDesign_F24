@@ -1,0 +1,90 @@
+%{
+#include <stdio.h>  
+#include <stdlib.h>              
+#include <string.h>   
+
+/* Define tokens */         
+#define INT 1               
+#define REAL 2             
+#define IF 3              
+#define THEN 4           
+#define ELSE 5          
+#define WHILE 6            
+#define INTNUM 7           
+#define REALNUM 8          
+#define ID 9               
+#define EQ 10              
+#define NE 11              
+#define LE 12              
+#define GE 13               
+#define LT 14               
+#define GT 15              
+#define PLUS 16             
+#define MINUS 17     
+#define MUL 18                  
+#define DIV 19                  
+#define ASSIGN 20              
+#define SEMI 21                
+#define LBRACE 22                 
+#define RBRACE 23                 
+#define LPAREN 24                 
+#define RPAREN 25                 
+
+int lineno = 1;                
+int linepos = 1;
+
+/* Define yylval */
+typedef union {
+    int intval;
+    double floatval;
+    char *strval;
+} YYSTYPE;
+
+YYSTYPE yylval;
+%}
+
+%%
+
+"int"                   { printf("INT\n"); return INT; }
+"real"                  { printf("REAL\n"); return REAL; }
+"if"                    { printf("IF\n"); return IF; }
+"then"                  { printf("THEN\n"); return THEN; }
+"else"                  { printf("ELSE\n"); return ELSE; }
+"while"                 { printf("WHILE\n"); return WHILE; }
+[0-9]+                  { printf("INTNUM\n"); yylval.intval = atoi(yytext); return INTNUM; } 
+[0-9]+\.[0-9]+([eE][+-]?[0-9]+)? { printf("REALNUM\n"); yylval.floatval = atof(yytext); return REALNUM; }
+[a-zA-Z][a-zA-Z0-9_]*   { printf("ID\n"); yylval.strval = strdup(yytext); return ID; }
+"=="                    { printf("EQ\n"); return EQ; }
+"!="                    { printf("NE\n"); return NE; }
+"<="                    { printf("LE\n"); return LE; }
+">="                    { printf("GE\n"); return GE; }
+"<"                     { printf("LT\n"); return LT; }
+">"                     { printf("GT\n"); return GT; }
+"+"                     { printf("PLUS\n"); return PLUS; }
+"-"                     { printf("MINUS\n"); return MINUS; }
+"*"                     { printf("MUL\n"); return MUL; }
+"/"                     { printf("DIV\n"); return DIV; }
+"="                     { printf("ASSIGN\n"); return ASSIGN; }
+";"                     { printf("SEMI\n"); return SEMI; }
+"{"                     { printf("LBRACE\n"); return LBRACE; }
+"}"                     { printf("RBRACE\n"); return RBRACE; }
+"("                     { printf("LPAREN\n"); return LPAREN; }
+")"                     { printf("RPAREN\n"); return RPAREN; }
+"//"[^\n]*              { /* Ignore comments */ }
+[ \t]+                  { linepos += yyleng; }
+\n                      { lineno++; linepos = 1; }
+.                       { printf("Unknown character: %s\n", yytext); }
+
+%%
+
+int main(void) {
+    int token;
+    while ((token = yylex()) != 0) {
+
+        }
+
+    return 0;
+}
+
+int yywrap(void) {
+    return 1;
