@@ -1,0 +1,178 @@
+/* Lexical Analyzer */
+%{
+#include "parser.tab.h"
+#include <stdio.h>
+#include <stdlib.h>  // For atoi
+%}
+
+/* Definitions */
+DIGIT      [0-9]
+WHITESPACE [ \t]
+NEWLINE    [\n]
+%%
+
+{DIGIT}+        { yylval.val = atoi(yytext); return NUMBER; }
+\+              { return '+'; }
+\-              { return '-'; }
+\*              { return '*'; }
+\/              { return '/'; }
+\(              { return '('; }
+\)              { return ')'; }
+\=              { return EQUALS; } /* Indicate user is done with equation */
+{WHITESPACE}    { /* Ignore whitespace */ }
+{NEWLINE}       { /* Ignore newlines */ }
+.               { printf("Unrecognized character: %s\n", yytext); }
+<<EOF>>         { return 0; } /* Indicate end of file */
+
+%%
+
+/* Auxiliary code */
+int yywrap()
+{
+ return 1;
+}
+
+*/ Parser */
+%{
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+/* Declare functions to ensure they are recognized by the parser */
+int yylex(void);
+int yyerror(const char* s);
+
+/* Initialize counters used in parser */
+int tempVarCounter = 0;
+int result = 0;
+
+/* Function to generate temporary variable names */
+char* createTemp()
+{
+    char* temp = (char*)malloc(8);
+    sprintf(temp, "t%d", tempVarCounter++);
+    return temp;
+}
+%}
+
+%union
+{
+    int val;
+    char* temp;
+}
+
+%token <val> NUMBER
+%token EQUALS
+%type <val> input equation E T F
+
+%%
+
+/* Grammar rules with semantic actions to generate TAC */
+input: equation EQUALS
+    {
+        printf("Equation successfully parsed.\n");
+        printf("Results: %d\n", $1); /* Use final value */
+    }
+  | equation YYEOF
+    {
+        printf("Equation processed from file.\n");
+        printf("Result: %d\n", $1); /* Use final value */
+    };
+
+equation: E
+    {
+        $$ = $1; /* Pass value of E to the top level */
+    };
+
+E: E '+' T
+    {
+        char* temp = createTemp();
+        char buf1[16], buf3[16];
+        sprintf(buf1, "%d", $1); /* Converts $1 to stirng */
+        sprintf(buf3, "%d", $3); /* Converts $3 to string */
+        printf("%s = %s + %s\n", temp, buf1, buf3);
+        $$ = $1 + $3; /* Compute and pass the result */
+    }
+  | T
+    {
+        $$ = $1; /* Propogate value */
+    };
+
+T: T '*' F
+   {
+        char* temp = createTemp();
+        char buf1[16], buf3[16];
+        sprintf(buf1, "%d", $1);
+        sprintf(buf3, "%d", $3);
+        printf("%s = %s * %s\n", temp, buf1, buf3);
+        $$ = $1 * $3; /* Compute and pass the result */
+    }
+  | F
+    {
+        $$ = $1;
+    };
+
+F: '(' E ')'
+    {
+        $$ = $2; /* Propogate value from inside the parentheses */
+    }
+  | NUMBER
+    {
+        $$ = $1; /* Use value of number directly */
+        printf("NUMBER: %d\n", $$);
+    };
+
+%%
+
+/* Auxiliary C code */
+int main()
+{
+    while (1)
+    {
+        printf("Enter an expression followed by '=' (or provide input via a file):\n");
+
+        if (yyparse() == 0)
+        {
+            /* Nothing to do results are printed in semantic actions */
+        }
+        else
+        {
+            printf("Error: Invalid expression\n");
+        }
+
+        /* Exit when end of file is reached */
+        if (feof(stdin))
+        {
+        break;
+        }
+
+        /* Reset temp variable counter for new equation */
+        tempVarCounter = 0;
+    }
+    return 0;
+}
+
+int yyerror(const char* s)
+{
+    fprintf(stderr, "Error: %s\n", s);
+    return 0;
+}
+
+/* Test File */
+4 + 7 * 14 + (7 + 6) * 3
+
+/* OUTPUT */
+Enter an expression followed by '=' (or provide input via a file):
+NUMBER: 4
+NUMBER: 7
+NUMBER: 14
+t0 = 7 * 14
+t1 = 4 + 98
+NUMBER: 7
+NUMBER: 6
+t2 = 7 + 6
+NUMBER: 3
+t3 = 13 * 3
+t4 = 102 + 39
+Equation processed from file.
+Result: 141
